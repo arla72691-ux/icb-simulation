@@ -50,6 +50,7 @@ app.use(cors({
     ? process.env.FRONTEND_URL || true
     : 'http://localhost:3000',
 }));
+app.set('trust proxy', 1); // Required for Render (sits behind a proxy)
 app.use(express.json());
 
 const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 120 });
