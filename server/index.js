@@ -84,22 +84,28 @@ app.post('/api/register', async (req, res) => {
       return res.status(400).json({ error: 'Name must be at least 2 characters.' });
     }
 
-    // Escape double-quotes for Airtable formula
+    // Find all existing records whose name starts with this base name
     const safe = raw.replace(/"/g, '\\"');
-
     const existing = await atGet('Users', {
       filterByFormula: `LOWER({name}) = LOWER("${safe}")`,
-      maxRecords: 1,
-      fields: ['name', 'completed'],
+      fields: ['name'],
     });
 
+    // If name is already taken, append a number to make it unique
+    // e.g. "Aishwarya" → "Aishwarya 2" → "Aishwarya 3"
+    let finalName = raw;
     if (existing.records.length > 0) {
-      const rec = existing.records[0];
-      return res.json({ userId: rec.id, name: rec.fields.name, alreadyExists: true });
+      // Also check for numbered variants like "Aishwarya 2", "Aishwarya 3"
+      const safePrefixed = raw.replace(/"/g, '\\"');
+      const allVariants = await atGet('Users', {
+        filterByFormula: `OR(LOWER({name}) = LOWER("${safePrefixed}"), LOWER(LEFT({name}, ${raw.length + 1})) = LOWER("${safePrefixed} "))`,
+        fields: ['name'],
+      });
+      finalName = `${raw} ${allVariants.records.length + 1}`;
     }
 
     const created = await atCreate('Users', {
-      name: raw,
+      name: finalName,
       completed: false,
       createdAt: new Date().toISOString(),
     });
