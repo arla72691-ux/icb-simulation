@@ -1,18 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { getStats, registerUser, submitScore, getLeaderboard } from "./api";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// ACCENTURE LOGO — correct brand mark: the ">" chevron + wordmark in #A100FF
-// ─────────────────────────────────────────────────────────────────────────────
-const ACCENTURE_LOGO_B64 = "data:image/png;base64,YOUR_ENTIRE_BASE64_STRING_ON_ONE_LINE";
-
 const AccentureLogo = ({ dark = false }) => (
   <div style={{ display: 'flex', alignItems: 'center' }}>
     <img
-      src={ACCENTURE_LOGO_B64}
+      src="/Accenture-logo.png"
       alt="Accenture"
       style={{
-        height: 22,
+        height: 24,
         width: 'auto',
         filter: dark ? 'brightness(0) invert(1)' : 'none',
       }}
