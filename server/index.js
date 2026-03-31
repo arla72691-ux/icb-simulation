@@ -93,23 +93,17 @@ app.post('/api/register', async (req, res) => {
       return res.status(400).json({ error: 'Name must be at least 2 characters.' });
     }
 
-    // Find all existing records whose name starts with this base name
+    // Find exact name AND all numbered variants in a single Airtable call
+    // e.g. "Aishwarya", "Aishwarya 2", "Aishwarya 3" all in one query
     const safe = raw.replace(/"/g, '\\"');
-    const existing = await atGet('Users', {
-      filterByFormula: `LOWER({name}) = LOWER("${safe}")`,
+    const allVariants = await atGet('Users', {
+      filterByFormula: `OR(LOWER({name}) = LOWER("${safe}"), LOWER(LEFT({name}, ${raw.length + 1})) = LOWER("${safe} "))`,
       fields: ['name'],
     });
 
-    // If name is already taken, append a number to make it unique
-    // e.g. "Aishwarya" → "Aishwarya 2" → "Aishwarya 3"
+    // If name (or any variant) is taken, assign the next number
     let finalName = raw;
-    if (existing.records.length > 0) {
-      // Also check for numbered variants like "Aishwarya 2", "Aishwarya 3"
-      const safePrefixed = raw.replace(/"/g, '\\"');
-      const allVariants = await atGet('Users', {
-        filterByFormula: `OR(LOWER({name}) = LOWER("${safePrefixed}"), LOWER(LEFT({name}, ${raw.length + 1})) = LOWER("${safePrefixed} "))`,
-        fields: ['name'],
-      });
+    if (allVariants.records.length > 0) {
       finalName = `${raw} ${allVariants.records.length + 1}`;
     }
 
