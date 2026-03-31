@@ -177,6 +177,22 @@ app.get('/api/leaderboard', async (req, res) => {
   }
 });
 
+// ── POST /api/reset ─────────────────────────────────────────────────────────
+app.post('/api/reset', async (req, res) => {
+  try {
+    const secret = process.env.RESET_PASSWORD;
+    if (!secret || req.body.password !== secret) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    await pool.query('TRUNCATE leaderboard, users RESTART IDENTITY CASCADE');
+    statsCache = { data: null, ts: 0 };
+    res.json({ success: true, message: 'All data cleared.' });
+  } catch (err) {
+    console.error('[POST /api/reset]', err.message);
+    res.status(500).json({ error: 'Failed to reset.' });
+  }
+});
+
 // ── Serve React in production ───────────────────────────────────────────────
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '../client/build')));
