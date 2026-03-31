@@ -57,17 +57,26 @@ const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 120 });
 app.use('/api/', limiter);
 
 // ── GET /api/stats ───────────────────────────────────────────────────────────
-// Returns { joined, completed }
+// Returns { joined, completed }  — cached for 20 seconds
+let statsCache = { data: null, ts: 0 };
+const STATS_TTL = 20_000; // 20 seconds
+
 app.get('/api/stats', async (req, res) => {
   try {
+    if (statsCache.data && Date.now() - statsCache.ts < STATS_TTL) {
+      return res.json(statsCache.data);
+    }
     const data = await atGet('Users', {
       fields: ['name', 'completed'],
     });
     const joined = data.records.length;
     const completed = data.records.filter(r => r.fields.completed === true).length;
-    res.json({ joined, completed });
+    const result = { joined, completed };
+    statsCache = { data: result, ts: Date.now() };
+    res.json(result);
   } catch (err) {
     console.error('[GET /api/stats]', err.response?.data || err.message);
+    if (statsCache.data) return res.json(statsCache.data); // serve stale on error
     res.status(500).json({ error: 'Failed to fetch stats' });
   }
 });
