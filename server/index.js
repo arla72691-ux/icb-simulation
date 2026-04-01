@@ -193,6 +193,22 @@ app.post('/api/reset', async (req, res) => {
   }
 });
 
+// ── GET /api/admin/data ─────────────────────────────────────────────────────
+app.get('/api/admin/data', async (req, res) => {
+  try {
+    const secret = process.env.RESET_PASSWORD;
+    if (!secret || req.query.password !== secret) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    const { rows: users } = await pool.query('SELECT * FROM users ORDER BY created_at DESC');
+    const { rows: leaderboard } = await pool.query('SELECT * FROM leaderboard ORDER BY score DESC');
+    res.json({ users, leaderboard });
+  } catch (err) {
+    console.error('[GET /api/admin/data]', err.message);
+    res.status(500).json({ error: 'Failed to fetch data' });
+  }
+});
+
 // ── Serve React in production ───────────────────────────────────────────────
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '../client/build')));
